@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "69425902214",
+    "project_id": "treeco-ecf5c",
+    "storage_bucket": "treeco-ecf5c.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:69425902214:android:120c1ae761cd192f9f1707",
+        "android_client_info": {
+          "package_name": "org.treeco.treeco"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "69425902214-8lcs8jomo0tb5lkj3chg15fss91kougv.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "org.treeco.treeco",
+            "certificate_hash": "55783f8b3035c726eebf2a69038467020dc18597"
+          }
+        },
+        {
+          "client_id": "69425902214-u8psc0pub9rtd7vnn9du4na9bo61q4uf.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBnlmkvZ6ZYgCeUW9D18LVXvA3_haIW_zY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "69425902214-u8psc0pub9rtd7vnn9du4na9bo61q4uf.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
