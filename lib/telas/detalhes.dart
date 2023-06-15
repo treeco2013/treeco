@@ -1,13 +1,12 @@
-// ignore_for_file: unnecessary_getters_setters
-import 'dart:io';
-
+// ignore_for_file: unnecessary_getters_setters, avoid_print
 import 'package:flutter/material.dart';
+import 'package:treeco/api/api.dart';
 import '../modelo/arvore.dart';
 
 typedef OnArvoreParaGravar = void Function(Arvore arvore);
-typedef OnImagemParaVisualizar = void Function(Arvore arvore);
+typedef OnClassificacaoSelecionada = void Function(Arvore arvore);
+
 typedef TemUsuarioLogado = bool Function();
-typedef AtivarCamera = void Function();
 
 class Detalhes {
   late Arvore _arvore;
@@ -22,10 +21,11 @@ class Detalhes {
     _onArvoreParaGravar = value;
   }
 
-  late OnImagemParaVisualizar _onImagemParaVisualizar;
-  OnImagemParaVisualizar get onImagemParaVisualizar => _onImagemParaVisualizar;
-  set onImagemParaVisualizar(OnImagemParaVisualizar value) {
-    _onImagemParaVisualizar = value;
+  late OnClassificacaoSelecionada _onClassificacaoSelecionada;
+  OnClassificacaoSelecionada get onClassificacaoSelecionada =>
+      _onClassificacaoSelecionada;
+  set onClassificacaoSelecionada(OnClassificacaoSelecionada value) {
+    _onClassificacaoSelecionada = value;
   }
 
   late TemUsuarioLogado _temUsuarioLogado;
@@ -34,21 +34,23 @@ class Detalhes {
     _temUsuarioLogado = value;
   }
 
-  late AtivarCamera _ativarCamera;
-  AtivarCamera get ativarCamera => _ativarCamera;
-  set ativarCamera(AtivarCamera value) {
-    _ativarCamera = value;
+  late Classificacoes _classificacoes;
+  Classificacoes get classificacoes => _classificacoes;
+  set classificacoes(Classificacoes value) {
+    _classificacoes = value;
   }
 
   Detalhes(
       OnArvoreParaGravar onArvoreParaGravar,
-      OnImagemParaVisualizar onImagemParaVisualizar,
+      OnClassificacaoSelecionada onClassificacaoSelecionada,
       TemUsuarioLogado temUsuarioLogado,
-      AtivarCamera ativarCamera) {
+      Classificacoes classificacoes) {
+    this.onClassificacaoSelecionada = onClassificacaoSelecionada;
     this.onArvoreParaGravar = onArvoreParaGravar;
-    this.onImagemParaVisualizar = onImagemParaVisualizar;
+
     this.temUsuarioLogado = temUsuarioLogado;
-    this.ativarCamera = ativarCamera;
+
+    this.classificacoes = classificacoes;
   }
 
   void gravarArvore() {
@@ -67,41 +69,64 @@ class Detalhes {
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[
               Padding(
-                padding: const EdgeInsets.all(6),
-                child: Center(
-                    child: Container(
                   padding: const EdgeInsets.all(4),
-                  decoration: BoxDecoration(
-                      color: Colors.green[100],
-                      border: Border.all(
-                        color: Colors.green,
-                        width: 5,
-                      )),
-                  child: arvore.imagem.isEmpty
-                      ? GestureDetector(
-                          onTap: () => {ativarCamera()},
-                          child: Image.asset(
-                              "lib/recursos/imagens/marcador.png",
-                              width: 100,
-                              height: 160))
-                      : GestureDetector(
-                          onTap: () => {onImagemParaVisualizar(arvore)},
-                          child: Image.file(File(arvore.imagem),
-                              width: 100, height: 160)),
-                )),
+                  child: Autocomplete<Arvore>(
+                      initialValue:
+                          TextEditingValue(text: arvore.identificacao),
+                      optionsBuilder: (TextEditingValue value) {
+                        if (value.text.isEmpty) {
+                          return const Iterable<Arvore>.empty();
+                        }
+                        return classificacoes.arvores
+                            .where((final Arvore arvore) {
+                          return arvore.identificacao
+                              .toLowerCase()
+                              .startsWith(value.text.toLowerCase());
+                        });
+                      },
+                      onSelected: (final Arvore arvoreSelecionada) {
+                        onClassificacaoSelecionada(arvoreSelecionada);
+                      },
+                      fieldViewBuilder: (BuildContext context,
+                          TextEditingController textEditingController,
+                          FocusNode focusNode,
+                          VoidCallback onFieldSubmitted) {
+                        return TextFormField(
+                          controller: textEditingController,
+                          focusNode: focusNode,
+                          onChanged: (String identificacao) {
+                            arvore.identificacao = identificacao;
+                          },
+                          onFieldSubmitted: (String identificacao) {
+                            arvore.identificacao = identificacao;
+
+                            onFieldSubmitted();
+                          },
+                          decoration:
+                              const InputDecoration(hintText: 'identificação'),
+                        );
+                      })),
+              Padding(
+                padding: const EdgeInsets.all(4),
+                child: TextFormField(
+                    initialValue: arvore.familia,
+                    enabled: temUsuarioLogado(),
+                    decoration: const InputDecoration(hintText: 'familia'),
+                    onChanged: (value) => arvore.familia = value),
               ),
               Padding(
                 padding: const EdgeInsets.all(4),
                 child: TextFormField(
-                    initialValue: arvore.tipo,
-                    decoration:
-                        const InputDecoration(hintText: 'tipo da árvore'),
-                    onChanged: (value) => arvore.tipo = value),
+                    initialValue: arvore.especie,
+                    enabled: temUsuarioLogado(),
+                    decoration: const InputDecoration(hintText: 'especie'),
+                    onChanged: (value) => arvore.especie = value),
               ),
               Padding(
                 padding: const EdgeInsets.all(4),
                 child: TextFormField(
                     initialValue: arvore.detalhes,
+                    enabled: temUsuarioLogado(),
                     keyboardType: TextInputType.multiline,
                     maxLines: null,
                     decoration:
@@ -109,12 +134,14 @@ class Detalhes {
                     onChanged: (value) => arvore.detalhes = value),
               ),
               Padding(
-                  padding: const EdgeInsets.all(4),
-                  child: Row(
-                      mainAxisAlignment: MainAxisAlignment.start,
-                      children: [
-                        Text("marcada por ${arvore.quemMarcou.nome}")
-                      ])),
+                  padding: const EdgeInsets.only(top: 14, bottom: 6, right: 4),
+                  child:
+                      Row(mainAxisAlignment: MainAxisAlignment.end, children: [
+                    Text(
+                        "últimas alterações realizadas por ${arvore.quemMarcou.nome}",
+                        style: const TextStyle(
+                            fontSize: 12, color: Colors.black45))
+                  ])),
               temUsuarioLogado()
                   ? Padding(
                       padding: const EdgeInsets.all(6),

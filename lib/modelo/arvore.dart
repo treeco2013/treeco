@@ -1,5 +1,6 @@
 // ignore_for_file: unnecessary_getters_setters
 import 'package:geolocator/geolocator.dart';
+import 'package:uuid/uuid.dart';
 
 import 'usuario.dart';
 
@@ -10,10 +11,22 @@ class Arvore {
     _id = value;
   }
 
-  String _tipo = "";
-  String get tipo => _tipo;
-  set tipo(String value) {
-    _tipo = value;
+  String _identificacao = "";
+  String get identificacao => _identificacao;
+  set identificacao(String value) {
+    _identificacao = value;
+  }
+
+  String _familia = "";
+  String get familia => _familia;
+  set familia(String value) {
+    _familia = value;
+  }
+
+  String _especie = "";
+  String get especie => _especie;
+  set especie(String value) {
+    _especie = value;
   }
 
   String _detalhes = "";
@@ -28,10 +41,10 @@ class Arvore {
     _posicao = value;
   }
 
-  String _imagem = "";
-  String get imagem => _imagem;
-  set imagem(String value) {
-    _imagem = value;
+  List<String> _imagens = [];
+  List<String> get imagens => _imagens;
+  set imagens(List<String> value) {
+    _imagens = value;
   }
 
   late Usuario _quemMarcou;
@@ -40,8 +53,88 @@ class Arvore {
     _quemMarcou = value;
   }
 
-  Arvore({String tipo = "", String detalhes = ""}) {
-    _tipo = tipo;
-    _detalhes = detalhes;
+  late Usuario _quemFotografou;
+  Usuario get quemFotografou => _quemFotografou;
+  set quemFotografou(Usuario value) {
+    _quemFotografou = value;
   }
+
+  Arvore(
+      {String identificacao = "",
+      String familia = "",
+      String especie = "",
+      String detalhes = ""}) {
+    this.identificacao = identificacao;
+    this.familia = familia;
+    this.especie = especie;
+    this.detalhes = detalhes;
+  }
+
+  static Arvore fromBancoDeDados(Map<String, dynamic> registro) {
+    Arvore arvore = Arvore(
+        identificacao: registro['identificacao'],
+        familia: registro['familia'],
+        especie: registro['especie'],
+        detalhes: registro['detalhes']);
+    arvore.id = registro['id'];
+    arvore.quemMarcou = Usuario.fromJson(registro['quemMarcou']);
+    arvore.quemFotografou = Usuario.fromJson(registro['quemFotografou']);
+    arvore.posicao = Position.fromMap(registro['posicao']);
+
+    for (final imagem in registro['imagens']) {
+      arvore.imagens.add(imagem as String);
+    }
+
+    return arvore;
+  }
+
+  static Arvore fromClassificacao(Map<String, dynamic> classificacao) {
+    Arvore arvore = Arvore(
+        identificacao: classificacao['identificacao'],
+        familia: classificacao['familia'],
+        especie: classificacao['especie']);
+
+    return arvore;
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'identificacao': identificacao,
+      'familia': familia,
+      'especie': especie,
+      'detalhes': detalhes,
+      'imagens': imagens,
+      'quemMarcou': quemMarcou.toJson(),
+      'quemFotografou': quemFotografou.toJson(),
+      'posicao': posicao.toJson()
+    };
+  }
+
+  Arvore generateId() {
+    final mili = DateTime.now().millisecondsSinceEpoch;
+    id = const Uuid().v5(
+        Uuid.NAMESPACE_OID, "$identificacao|$familia|$especie|$detalhes|$mili");
+
+    return this;
+  }
+
+  @override
+  String toString() {
+    return identificacao;
+  }
+
+  @override
+  bool operator ==(other) {
+    return other is Arvore &&
+        identificacao.toLowerCase() == other.identificacao.toLowerCase() &&
+        familia.toLowerCase() == other.familia.toLowerCase() &&
+        especie.toLowerCase() == other.especie.toLowerCase();
+  }
+
+  @override
+  int get hashCode =>
+      identificacao.toLowerCase().hashCode ^
+      familia.toLowerCase().hashCode ^
+      especie.toLowerCase().hashCode;
 }

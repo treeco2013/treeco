@@ -17,4 +17,12 @@ class Usuario {
     this.conta = conta;
     this.nome = nome;
   }
+
+  static Usuario fromJson(Map<String, dynamic> json) {
+    return Usuario(conta: json['conta'], nome: json['nome']);
+  }
+
+  Map<String, dynamic> toJson() {
+    return {'conta': conta, 'nome': nome};
+  }
 }

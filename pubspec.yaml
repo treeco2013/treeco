@@ -5,7 +5,7 @@ publish_to: 'none'
 version: 1.0.0+1
 
 environment:
-  sdk: '>=2.19.5 <3.0.0'
+  sdk: '>=3.0.3 <4.0.0'
 
 dependencies:
   flutter:
@@ -16,8 +16,10 @@ dependencies:
   geolocator: ^9.0.2
   fluttertoast: ^8.2.1
   flutter_native_splash: ^2.2.16
+  flutter_image_slideshow: ^0.1.5
   google_sign_in: ^6.1.0
-  image_viewer: ^1.5.0
+  image_picker: ^0.8.6+1
+  sqflite: ^2.2.8+2
   camera: ^0.10.1
   uuid: ^3.0.7
   
@@ -32,6 +34,7 @@ flutter:
   assets:
     - lib/recursos/icones/
     - lib/recursos/imagens/
+    - lib/recursos/estaticos/
     
 flutter_icons:
   ios: true

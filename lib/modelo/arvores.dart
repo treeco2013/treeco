@@ -2,20 +2,24 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:uuid/uuid.dart';
 
+import '../api/api.dart';
 import 'arvore.dart';
 import '../constantes.dart';
 
 typedef OnArvoreSelecionada = void Function(Arvore arvore, bool duploClique);
 
 class Arvores {
-  final uuid = const Uuid();
+  late OnArvoreSelecionada _onArvoreSelecionada;
+  OnArvoreSelecionada get onArvoreSelecionada => _onArvoreSelecionada;
+  set onArvoreSelecionada(OnArvoreSelecionada value) {
+    _onArvoreSelecionada = value;
+  }
 
-  List<Arvore> _arvores = [];
-  List<Arvore> get arvores => _arvores;
-  set arvores(List<Arvore> value) {
-    _arvores = value;
+  late API _api;
+  API get api => _api;
+  set api(API value) {
+    _api = value;
   }
 
   late double _tamanhoMarcador;
@@ -24,30 +28,27 @@ class Arvores {
     _tamanhoMarcador = value;
   }
 
-  late OnArvoreSelecionada _onArvoreSelecionada;
-  OnArvoreSelecionada get onArvoreSelecionada => _onArvoreSelecionada;
-  set onArvoreSelecionada(OnArvoreSelecionada value) {
-    _onArvoreSelecionada = value;
-  }
-
-  Arvores(OnArvoreSelecionada onArvoreSelecionada,
+  Arvores(OnArvoreSelecionada onArvoreSelecionada, API api,
       {double tamanhoMarcador = TAMANHO_MARCADOR_DE_ARVORE}) {
     this.onArvoreSelecionada = onArvoreSelecionada;
     this.tamanhoMarcador = tamanhoMarcador;
+    this.api = api;
   }
 
-  void adicionarArvore(Arvore arvore) {
+  Future<ResultadoOperacao> gravarArvore(Arvore arvore) async {
+    ResultadoOperacao resultado;
+
     if (arvore.id.isNotEmpty) {
-      arvores.removeWhere((item) => item.id == arvore.id);
+      resultado = await api.atualizar(arvore);
     } else {
-      arvore.id = uuid.v1();
+      resultado = await api.adicionar(arvore.generateId());
     }
 
-    arvores.add(arvore);
+    return resultado;
   }
 
-  void removerArvore(String id) {
-    arvores.removeWhere((item) => item.id == id);
+  Future<ResultadoOperacao> removerArvore(String id) async {
+    return await api.remover(id);
   }
 
   Widget getMarcadorArvore(Arvore arvore, bool destacar) {
@@ -59,7 +60,7 @@ class Arvores {
         !destacar
             ? Center(
                 child: Text(
-                arvore.tipo,
+                arvore.identificacao,
                 style: const TextStyle(
                     fontSize: 11,
                     color: Colors.white,
@@ -76,9 +77,10 @@ class Arvores {
     );
   }
 
-  List<Marker> toMarcadores({String idArvoreParaDestacar = ""}) {
+  Future<List<Marker>> toMarcadores({String idArvoreParaDestacar = ""}) async {
     List<Marker> marcadores = [];
 
+    final arvores = await api.getArvores();
     for (final arvore in arvores) {
       marcadores.add(Marker(
           point: LatLng(arvore.posicao.latitude, arvore.posicao.longitude),

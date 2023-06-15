@@ -83,7 +83,8 @@ class Mapa {
     EstadoPosicionamento estado = await posicionamentoHabilitado();
 
     if (estado == EstadoPosicionamento.permitido) {
-      posicao = await Geolocator.getCurrentPosition();
+      posicao = await Geolocator.getCurrentPosition(
+          desiredAccuracy: LocationAccuracy.high);
       estado = EstadoPosicionamento.atualizado;
     }
 

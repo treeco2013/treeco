@@ -1,14 +1,16 @@
 // ignore_for_file: unnecessary_getters_setters, avoid_print
-import 'dart:io';
+import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:treeco/api/api.dart';
 import 'package:treeco/modelo/arvores.dart';
 import 'package:treeco/camera.dart';
 import 'package:treeco/telas/mapa.dart';
 import 'package:treeco/constantes.dart';
-import 'package:treeco/telas/sobre.dart';
+import 'package:treeco/telas/imagens.dart';
 
 import 'modelo/usuario.dart';
 import 'telas/detalhes.dart';
@@ -25,13 +27,32 @@ class App extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'TreeCo',
-      theme: ThemeData(primarySwatch: Colors.green),
+      theme: ThemeData(
+        primaryColor: Colors.green,
+        scaffoldBackgroundColor: Colors.white,
+        appBarTheme: const AppBarTheme(
+          color: Colors.green,
+        ),
+        bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+            backgroundColor: Colors.green, selectedItemColor: Colors.white),
+        textTheme: const TextTheme(
+          titleLarge: TextStyle(
+            color: Colors.black54,
+          ),
+        ),
+      ),
       home: const TreeCo(),
     );
   }
 }
 
-enum Estado { visualizandoMapa, visualizandoArvore, marcandoArvore }
+enum Estado {
+  iniciando,
+  inicializacaoFalhou,
+  visualizandoMapa,
+  visualizandoArvore,
+  marcandoArvore
+}
 
 typedef ExecutarAposPosicionar = void Function();
 typedef ExecutarAposConfirmar = void Function();
@@ -44,7 +65,7 @@ class TreeCo extends StatefulWidget {
 }
 
 class TreeCoState extends State<TreeCo> {
-  Estado _estado = Estado.visualizandoMapa;
+  Estado _estado = Estado.iniciando;
   Estado get estado => _estado;
   set estado(Estado value) {
     _estado = value;
@@ -68,6 +89,12 @@ class TreeCoState extends State<TreeCo> {
     _detalhes = value;
   }
 
+  late Imagens _imagens;
+  Imagens get imagens => _imagens;
+  set imagens(Imagens value) {
+    _imagens = value;
+  }
+
   Usuario? _usuario;
   Usuario get usuario => _usuario!;
   set usuario(Usuario value) {
@@ -79,16 +106,22 @@ class TreeCoState extends State<TreeCo> {
     _opcaoSelecionada = value;
   }
 
-  late Arvores _arvoresAPI;
-  Arvores get arvoresAPI => _arvoresAPI;
-  set arvoresAPI(Arvores value) {
-    _arvoresAPI = value;
+  late Arvores _arvores;
+  Arvores get arvores => _arvores;
+  set arvores(Arvores value) {
+    _arvores = value;
   }
 
   Arvore? _arvoreSelecionada;
   Arvore get arvoreSelecionada => _arvoreSelecionada!;
   set arvoreSelecionada(Arvore value) {
     _arvoreSelecionada = value;
+  }
+
+  String? _imagemSelecionada;
+  String get imagemSelecionada => _imagemSelecionada!;
+  set imagemSelecionada(String value) {
+    _imagemSelecionada = value;
   }
 
   late GoogleSignIn _loginGoogle;
@@ -98,24 +131,98 @@ class TreeCoState extends State<TreeCo> {
   }
 
   bool _posicionando = false;
+  bool _apiLocal = false;
 
   @override
   void initState() {
     super.initState();
 
+    setState(() {
+      estado = Estado.iniciando;
+    });
+
+    final api = getAPI();
+    api.iniciar().then((resultado) {
+      if (resultado == ResultadoOperacao.sucesso) {
+        arvores = Arvores(onArvoreSelecionada, api);
+
+        iniciarMapa();
+        exibirMarcadores();
+
+        iniciarLogin();
+        iniciarCamera();
+
+        final classificacoes = getClassificacoes();
+        classificacoes.iniciar().then((_) {
+          classificacoes
+              .adicionarClassificacoes(api)
+              .then((_) => {iniciarTelas(classificacoes)});
+        });
+
+        setState(() {
+          estado = Estado.visualizandoMapa;
+        });
+
+        if (_apiLocal) {
+          alertar("você está usando armazenamento local");
+        }
+      } else {
+        setState(() {
+          estado = Estado.inicializacaoFalhou;
+        });
+      }
+    });
+  }
+
+  void iniciarMapa() {
     mapa = Mapa();
     atualizarPosicao(false, () => {});
+  }
 
-    camera = Camera();
-    detalhes = Detalhes(onArvoreParaGravar, onImagemParaVisualizar,
-        temUsuarioLogado, ativarCamera);
-
+  void iniciarLogin() {
     loginGoogle = GoogleSignIn(
       scopes: ['email'],
     );
     recuperarUsuarioLogado();
+  }
 
-    arvoresAPI = Arvores(onArvoreSelecionada);
+  void iniciarCamera() {
+    camera = Camera();
+  }
+
+  void iniciarTelas(final Classificacoes classificacoes) {
+    detalhes = Detalhes(onArvoreParaGravar, onClassificacaoSelecionada,
+        temUsuarioLogado, classificacoes);
+
+    imagens = Imagens(onArvoreParaGravar, onImagemParaVisualizar,
+        onAtivarCamera, temUsuarioLogado);
+  }
+
+  API getAPI() {
+    _apiLocal = false;
+
+    API api = Remota();
+    if (!api.disponivel()) {
+      api = Local();
+
+      _apiLocal = true;
+    }
+
+    return api;
+  }
+
+  Classificacoes getClassificacoes() {
+    final classificoes = Classificacoes();
+
+    return classificoes;
+  }
+
+  void exibirMarcadores({String idArvoreParaDestacar = ""}) {
+    arvores
+        .toMarcadores(idArvoreParaDestacar: idArvoreParaDestacar)
+        .then((marcadores) => setState(() {
+              mapa.marcadores = marcadores;
+            }));
   }
 
   void recuperarUsuarioLogado() {
@@ -133,11 +240,23 @@ class TreeCoState extends State<TreeCo> {
         });
   }
 
-  void onImagemParaVisualizar(Arvore arvore) {
-    arvoreSelecionada = arvore;
+  bool temUsuarioLogado() {
+    return _usuario != null;
+  }
+
+  void onImagemParaVisualizar(String imagem) {
+    imagemSelecionada = imagem;
 
     setState(() {
       estado = Estado.visualizandoArvore;
+    });
+  }
+
+  void onClassificacaoSelecionada(Arvore arvore) {
+    setState(() {
+      arvoreSelecionada.identificacao = arvore.identificacao;
+      arvoreSelecionada.familia = arvore.familia;
+      arvoreSelecionada.especie = arvore.especie;
     });
   }
 
@@ -157,8 +276,7 @@ class TreeCoState extends State<TreeCo> {
     setState(() {
       estado = Estado.marcandoArvore;
 
-      mapa.marcadores =
-          arvoresAPI.toMarcadores(idArvoreParaDestacar: arvore.id);
+      exibirMarcadores(idArvoreParaDestacar: arvore.id);
     });
   }
 
@@ -166,7 +284,7 @@ class TreeCoState extends State<TreeCo> {
     setState(() {
       estado = Estado.visualizandoMapa;
 
-      mapa.marcadores = arvoresAPI.toMarcadores();
+      exibirMarcadores();
     });
   }
 
@@ -257,54 +375,89 @@ class TreeCoState extends State<TreeCo> {
   List<String> validarArvore() {
     List<String> erros = [];
 
-    if (arvoreSelecionada.tipo.isEmpty) {
+    if (arvoreSelecionada.identificacao.isEmpty) {
       erros.add("informe o tipo da árvore");
-    }
-    if (arvoreSelecionada.imagem.isEmpty) {
-      erros.add("capture uma foto da árvore");
     }
 
     return erros;
   }
 
-  gravarArvore(Estado estado) {
+  void atualizarClassificacoes() {
+    if (!detalhes.classificacoes.arvores.contains(arvoreSelecionada)) {
+      detalhes.classificacoes.arvores.add(arvoreSelecionada);
+    }
+  }
+
+  void gravarArvore(Estado estado) {
     final erros = validarArvore();
 
     if (erros.isNotEmpty) {
       alertar(erros.first);
     } else {
-      arvoresAPI.adicionarArvore(arvoreSelecionada);
+      arvores.gravarArvore(arvoreSelecionada).then((resultado) async {
+        setState(() {
+          this.estado = estado;
 
-      setState(() {
-        this.estado = estado;
-        mapa.marcadores = arvoresAPI.toMarcadores(
-            idArvoreParaDestacar:
-                estado == Estado.marcandoArvore ? arvoreSelecionada.id : "");
+          exibirMarcadores();
+        });
 
-        Fluttertoast.showToast(msg: "dados gravados com sucesso!");
+        if (resultado == ResultadoOperacao.sucesso) {
+          atualizarClassificacoes();
+
+          Fluttertoast.showToast(msg: "árvore gravada com sucesso");
+        } else {
+          Fluttertoast.showToast(msg: "não foi possível gravar árvore");
+        }
       });
     }
+  }
+
+  void capturarImagem() {
+    camera.capturar().then((imagem) {
+      imagem.readAsBytes().then((bytes) {
+        String string = base64.encode(bytes);
+        arvoreSelecionada.imagens.add(string);
+      });
+
+      setState(() {
+        camera.estadoCamera = EstadoCamera.desativada;
+      });
+    });
+  }
+
+  void selecionarImagem() {
+    final imgPicker = ImagePicker();
+    imgPicker.pickImage(source: ImageSource.gallery).then((imagem) {
+      if (imagem != null) {
+        print("imagem selecionada: ${imagem.path}");
+        setState(() {
+          imagem.readAsBytes().then((bytes) {
+            String string = base64.encode(bytes);
+            arvoreSelecionada.imagens.add(string);
+          });
+        });
+      }
+    });
   }
 
   marcarUmaArvore() {
     atualizarPosicao(
         true,
-        () => {
-              setState(() {
-                arvoreSelecionada = Arvore();
-                arvoreSelecionada.posicao = mapa.posicao;
-                arvoreSelecionada.quemMarcou = usuario;
+        () => setState(() {
+              arvoreSelecionada = Arvore();
+              arvoreSelecionada.posicao = mapa.posicao;
+              arvoreSelecionada.quemMarcou = usuario;
+              arvoreSelecionada.quemFotografou = usuario;
 
-                estado = Estado.marcandoArvore;
-                opcaoSelecionada = DETALHES_DE_ARVORE;
-              })
-            });
+              estado = Estado.marcandoArvore;
+              opcaoSelecionada = DETALHES;
+            }));
   }
 
   Widget getBotoesMapa() {
     final botoes = Column(children: [
       Container(
-          margin: const EdgeInsets.all(5),
+          margin: const EdgeInsets.all(MARGEM_DEFAULT),
           child: FloatingActionButton(
               enableFeedback: true,
               onPressed: () {
@@ -313,7 +466,7 @@ class TreeCoState extends State<TreeCo> {
               child: const Icon(Icons.gps_fixed_sharp))),
       temUsuarioLogado()
           ? Container(
-              margin: const EdgeInsets.all(5),
+              margin: const EdgeInsets.all(MARGEM_DEFAULT),
               child: FloatingActionButton(
                   enableFeedback: true,
                   onPressed: () {
@@ -330,46 +483,42 @@ class TreeCoState extends State<TreeCo> {
     final botoes = Column(children: [
       temUsuarioLogado()
           ? Container(
-              margin: const EdgeInsets.all(5),
+              margin: const EdgeInsets.all(MARGEM_DEFAULT),
               child: FloatingActionButton(
                   enableFeedback: true,
                   onPressed: () {
                     setState(() {
-                      opcaoSelecionada = DETALHES_DE_ARVORE;
+                      opcaoSelecionada = DETALHES;
                     });
                   },
                   child: const Icon(Icons.edit)))
           : const SizedBox.shrink(),
-      Container(
-          margin: const EdgeInsets.all(5),
-          child: FloatingActionButton(
-              enableFeedback: true,
-              onPressed: () {
-                onImagemParaVisualizar(arvoreSelecionada);
-              },
-              child: const Icon(Icons.preview))),
       temUsuarioLogado()
           ? Container(
-              margin: const EdgeInsets.all(5),
+              margin: const EdgeInsets.all(MARGEM_DEFAULT),
               child: FloatingActionButton(
                   enableFeedback: true,
                   onPressed: () {
                     remover("desejar remover a árvore?", () {
-                      arvoresAPI.removerArvore(arvoreSelecionada.id);
+                      arvores
+                          .removerArvore(arvoreSelecionada.id)
+                          .then((resultado) {
+                        removerDestaque();
 
-                      setState(() {
-                        mapa.marcadores = arvoresAPI.toMarcadores();
-                        estado = Estado.visualizandoMapa;
-
-                        Fluttertoast.showToast(
-                            msg: "árvore removida com sucesso");
+                        if (resultado == ResultadoOperacao.sucesso) {
+                          Fluttertoast.showToast(
+                              msg: "árvore removida com sucesso");
+                        } else {
+                          Fluttertoast.showToast(
+                              msg: "não foi possível remover a árvore");
+                        }
                       });
                     });
                   },
                   child: const Icon(Icons.delete)))
           : const SizedBox.shrink(),
       Container(
-          margin: const EdgeInsets.all(5),
+          margin: const EdgeInsets.all(MARGEM_DEFAULT),
           child: FloatingActionButton(
               enableFeedback: true,
               mini: true,
@@ -383,7 +532,7 @@ class TreeCoState extends State<TreeCo> {
     return botoes;
   }
 
-  void ativarCamera() {
+  void onAtivarCamera() {
     camera.iniciar().then((estado) => {
           if (estado == EstadoCamera.disponivel)
             setState(() {
@@ -392,67 +541,16 @@ class TreeCoState extends State<TreeCo> {
         });
   }
 
-  Widget getBotoesDetalhes() {
-    final botoes = Column(children: [
-      temUsuarioLogado()
-          ? Container(
-              margin: const EdgeInsets.all(5),
-              child: FloatingActionButton(
-                  enableFeedback: true,
-                  onPressed: () {
-                    ativarCamera();
-                  },
-                  child: const Icon(Icons.camera_alt_sharp)))
-          : const SizedBox.shrink(),
-      temUsuarioLogado() && arvoreSelecionada.imagem.isNotEmpty
-          ? Container(
-              margin: const EdgeInsets.all(5),
-              child: FloatingActionButton(
-                  enableFeedback: true,
-                  onPressed: () {
-                    remover("deseja remover a foto?", () {
-                      setState(() {
-                        arvoreSelecionada.imagem = "";
-                      });
-                    });
-                  },
-                  child: const Icon(Icons.delete)))
-          : const SizedBox.shrink(),
-      Container(
-          margin: const EdgeInsets.all(5),
-          child: FloatingActionButton(
-              enableFeedback: true,
-              backgroundColor: Colors.blue,
-              mini: true,
-              onPressed: () {
-                setState(() {
-                  opcaoSelecionada = MAPA_DE_ARVORES;
-                });
-              },
-              child: const Icon(Icons.arrow_back)))
-    ]);
-
-    return botoes;
-  }
-
   Widget getBotoesCamera() {
     final botoes = Column(children: [
       Container(
-          margin: const EdgeInsets.all(5),
+          margin: const EdgeInsets.all(MARGEM_DEFAULT),
           child: FloatingActionButton(
               enableFeedback: true,
-              onPressed: () {
-                camera.capturar().then((foto) {
-                  detalhes.arvore.imagem = foto.path;
-
-                  setState(() {
-                    camera.estadoCamera = EstadoCamera.desativada;
-                  });
-                });
-              },
+              onPressed: () => capturarImagem(),
               child: const Icon(Icons.check))),
       Container(
-          margin: const EdgeInsets.all(5),
+          margin: const EdgeInsets.all(MARGEM_DEFAULT),
           child: FloatingActionButton(
               enableFeedback: true,
               backgroundColor: Colors.blue,
@@ -471,11 +569,10 @@ class TreeCoState extends State<TreeCo> {
   getBotoesVisualizacaoArvore() {
     final botoes = Column(children: [
       Container(
-          margin: const EdgeInsets.all(5),
+          margin: const EdgeInsets.all(MARGEM_DEFAULT),
           child: FloatingActionButton(
               enableFeedback: true,
               backgroundColor: Colors.blue,
-              mini: true,
               onPressed: () {
                 setState(() {
                   estado = Estado.marcandoArvore;
@@ -487,37 +584,84 @@ class TreeCoState extends State<TreeCo> {
     return botoes;
   }
 
+  Widget getBotoesImagens() {
+    final botoes = Column(children: [
+      temUsuarioLogado()
+          ? Container(
+              margin: const EdgeInsets.all(MARGEM_DEFAULT),
+              child: FloatingActionButton(
+                  enableFeedback: true,
+                  onPressed: () {
+                    onAtivarCamera();
+                  },
+                  child: const Icon(Icons.camera_alt_sharp)))
+          : const SizedBox.shrink(),
+      temUsuarioLogado() && arvoreSelecionada.imagens.isNotEmpty
+          ? Container(
+              margin: const EdgeInsets.all(MARGEM_DEFAULT),
+              child: FloatingActionButton(
+                  enableFeedback: true,
+                  onPressed: () {
+                    remover("deseja remover a foto?", () {
+                      setState(() {
+                        // arvoreSelecionada.imagem = "";
+                      });
+                    });
+                  },
+                  child: const Icon(Icons.delete)))
+          : const SizedBox.shrink()
+    ]);
+
+    return botoes;
+  }
+
   void onOpcaoSelecionada(int opcao) {
     setState(() {
       opcaoSelecionada = opcao;
     });
   }
 
+  Widget getSelecionarArvorePrimeiro() {
+    return Center(
+        child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+      FloatingActionButton(
+          enableFeedback: true,
+          onPressed: () {
+            setState(() {
+              opcaoSelecionada = MAPA;
+            });
+          },
+          child: const Icon(Icons.arrow_back)),
+      const Padding(
+          padding: EdgeInsets.all(6),
+          child: Text("selecione uma árvore primeiro",
+              textAlign: TextAlign.center))
+    ]));
+  }
+
   Widget getTelaDaOpcaoSelecionada() {
     Widget tela = const SizedBox.shrink();
 
     if (estado == Estado.visualizandoArvore) {
-      final file = File(arvoreSelecionada.imagem);
+      final bytes = base64.decode(imagemSelecionada);
 
       tela = Stack(children: [
         SizedBox(
             height: MediaQuery.of(context).size.height,
             width: MediaQuery.of(context).size.width,
-            child: Image.file(file, fit: BoxFit.fill)),
+            child: Image.memory(bytes, fit: BoxFit.fill)),
         Container(
             alignment: Alignment.topRight, child: getBotoesVisualizacaoArvore())
       ]);
-    } else if (_opcaoSelecionada == MAPA_DE_ARVORES) {
+    } else if (_opcaoSelecionada == MAPA) {
       tela = Stack(children: [
         Center(child: _mapa.visualizar(!_posicionando)),
         _posicionando
             ? Container(
                 constraints: const BoxConstraints.expand(),
-                child: Column(
+                child: const Column(
                   mainAxisAlignment: MainAxisAlignment.center,
-                  children: const [
-                    CircularProgressIndicator(color: Colors.amber)
-                  ],
+                  children: [CircularProgressIndicator(color: Colors.amber)],
                 ))
             : Container(
                 alignment: Alignment.topRight,
@@ -525,38 +669,27 @@ class TreeCoState extends State<TreeCo> {
                     ? getBotoesArvore()
                     : getBotoesMapa())
       ]);
-    } else if (_opcaoSelecionada == DETALHES_DE_ARVORE) {
+    } else if (_opcaoSelecionada == DETALHES) {
+      if (estado == Estado.marcandoArvore) {
+        tela = detalhes.visualizar(arvoreSelecionada);
+      } else {
+        tela = getSelecionarArvorePrimeiro();
+      }
+    } else if (_opcaoSelecionada == IMAGENS) {
       if (estado == Estado.marcandoArvore) {
         tela = Stack(children: [
           camera.estadoCamera == EstadoCamera.ativada
               ? camera.iniciarCapturaDeFoto()
-              : detalhes.visualizar(arvoreSelecionada),
+              : imagens.visualizar(arvoreSelecionada),
           Container(
               alignment: Alignment.topRight,
               child: camera.estadoCamera == EstadoCamera.ativada
                   ? getBotoesCamera()
-                  : getBotoesDetalhes())
+                  : getBotoesImagens())
         ]);
       } else {
-        tela = Center(
-            child:
-                Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-          FloatingActionButton(
-              enableFeedback: true,
-              onPressed: () {
-                setState(() {
-                  opcaoSelecionada = MAPA_DE_ARVORES;
-                });
-              },
-              child: const Icon(Icons.arrow_back)),
-          const Padding(
-              padding: EdgeInsets.all(6),
-              child: Text("selecione uma árvore primeiro",
-                  textAlign: TextAlign.center))
-        ]));
+        tela = getSelecionarArvorePrimeiro();
       }
-    } else if (_opcaoSelecionada == SOBRE) {
-      tela = Sobre().visualizar();
     }
 
     return tela;
@@ -580,58 +713,91 @@ class TreeCoState extends State<TreeCo> {
 
   void logout() {
     loginGoogle.disconnect().then((_) {
-      setState(() => {_usuario = null});
+      setState(() => _usuario = null);
 
       Fluttertoast.showToast(msg: "você foi desconectado com sucesso!");
     });
   }
 
-  bool temUsuarioLogado() {
-    return _usuario != null;
-  }
-
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-        appBar: AppBar(
-            title: Row(children: [
-          const Text("TREECO marque "),
-          const Icon(Icons.add_location_alt_sharp),
-          const Text(" uma árvore"),
-          const Spacer(),
-          GestureDetector(
-              onTap: () {
-                if (temUsuarioLogado()) {
-                  logout();
-                } else {
-                  login();
-                }
-              },
-              child: temUsuarioLogado()
-                  ? const Icon(Icons.logout)
-                  : const Icon(Icons.login))
-        ])),
-        body: getTelaDaOpcaoSelecionada(),
-        bottomNavigationBar: camera.estadoCamera == EstadoCamera.ativada
-            ? const SizedBox.shrink()
-            : BottomNavigationBar(
-                items: const <BottomNavigationBarItem>[
-                    BottomNavigationBarItem(
-                      icon: Icon(Icons.add_location_alt_sharp),
-                      label: "Mapa",
-                    ),
-                    BottomNavigationBarItem(
-                      icon: Icon(Icons.more),
-                      label: 'Detalhes',
-                    ),
-                    BottomNavigationBarItem(
-                      icon: Icon(Icons.info),
-                      label: "Sobre",
-                    ),
-                  ],
-                currentIndex: _opcaoSelecionada,
-                backgroundColor: Colors.green,
-                selectedItemColor: Colors.black,
-                onTap: (value) => onOpcaoSelecionada(value)));
+    late Widget tela;
+
+    if (estado == Estado.iniciando) {
+      tela = Stack(children: [
+        SizedBox.expand(
+            child: Container(
+          color: const Color(0xfffdf69e),
+          child: const SizedBox.shrink(),
+        )),
+        const Center(
+            child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [CircularProgressIndicator(color: Colors.green)]))
+      ]);
+    } else if (estado == Estado.inicializacaoFalhou) {
+      tela = Stack(children: [
+        SizedBox.expand(
+            child: Container(
+          color: const Color(0xfffdf69e),
+          child: const SizedBox.shrink(),
+        )),
+        Center(
+            child:
+                Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+          const Image(
+            image: AssetImage('lib/recursos/icones/icon.png'),
+            width: 160,
+            height: 160,
+          ),
+          Material(
+              color: Colors.transparent,
+              child: Text("ocorreu uma falha iniciando o aplicativo :(",
+                  style: TextStyle(fontSize: 14, color: Colors.red[800])))
+        ]))
+      ]);
+    } else {
+      tela = Scaffold(
+          appBar: AppBar(
+              title: Row(children: [
+            const Text("TREECO marque "),
+            const Icon(Icons.add_location_alt_sharp),
+            const Text(" uma árvore"),
+            const Spacer(),
+            GestureDetector(
+                onTap: () {
+                  if (temUsuarioLogado()) {
+                    logout();
+                  } else {
+                    login();
+                  }
+                },
+                child: temUsuarioLogado()
+                    ? const Icon(Icons.logout)
+                    : const Icon(Icons.login))
+          ])),
+          body: getTelaDaOpcaoSelecionada(),
+          bottomNavigationBar: camera.estadoCamera == EstadoCamera.ativada
+              ? const SizedBox.shrink()
+              : BottomNavigationBar(
+                  items: const <BottomNavigationBarItem>[
+                      BottomNavigationBarItem(
+                        icon: Icon(Icons.add_location_alt_sharp),
+                        label: "Mapa",
+                      ),
+                      BottomNavigationBarItem(
+                        icon: Icon(Icons.more),
+                        label: 'Detalhes',
+                      ),
+                      BottomNavigationBarItem(
+                        icon: Icon(Icons.image),
+                        label: 'Imagens',
+                      ),
+                    ],
+                  currentIndex: _opcaoSelecionada,
+                  onTap: (value) => onOpcaoSelecionada(value)));
+    }
+
+    return tela;
   }
 }

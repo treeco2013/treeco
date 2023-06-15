@@ -1,0 +1,112 @@
+[
+    {
+        "identificacao": "Jacarandá",
+        "familia": "Bignoneaceae",
+        "especie": "Jacaranda mimosifolia"
+    },
+    {
+        "identificacao": "Pau Brasil",
+        "familia": "Fabaceae",
+        "especie": "Paubrasilia echinata"
+    },
+    {
+        "identificacao": "Amendoeira da praia",
+        "familia": "Combretaceae",
+        "especie": "Terminalia catappa"
+    },
+    {
+        "identificacao": "Ipê de Jardim",
+        "familia": "Bignoneaceae",
+        "especie": "Tecoma stans"
+    },
+    {
+        "identificacao": "Berigan",
+        "familia": "Moraceae",
+        "especie": "Ficus benjamina"
+    },
+    {
+        "identificacao": "Amargoseira",
+        "familia": "Meliaceae",
+        "especie": "Melia azedarach"
+    },
+    {
+        "identificacao": "Aroeira mansa",
+        "familia": "Anacardiaceae",
+        "especie": "Schinus terebinthifolia"
+    },
+    {
+        "identificacao": "Manga",
+        "familia": "Anacardiaceae",
+        "especie": "Mangifera indica"
+    },
+    {
+        "identificacao": "Sibipiruna",
+        "familia": "Fabaceae",
+        "especie": "Caesalpinia pluviosa"
+    },
+    {
+        "identificacao": "Pingo de ouro",
+        "familia": "Verbenaceae",
+        "especie": "Duranta erecta"
+    },
+    {
+        "identificacao": "Areca bambu",
+        "familia": "Arecaceae",
+        "especie": "Dypsis lutescens"
+    },
+    {
+        "identificacao": "Acerola",
+        "familia": "Malpighiaceae",
+        "especie": "Malpighia emarginata"
+    },
+    {
+        "identificacao": "Acácia Mangium",
+        "familia": "Mimosaceae",
+        "especie": "Acacia mangium"
+    },
+    {
+        "identificacao": "Amendoim bravo",
+        "familia": "Fabacéas",
+        "especie": "Piterogyne nitens"
+    },
+    {
+        "identificacao": "Feijão",
+        "familia": "Fabacéas",
+        "especie": "Cajanus cajan"
+    },
+    {
+        "identificacao": "Guapuruvu",
+        "familia": "Fabacéas",
+        "especie": "Schizolobium parahyba"
+    },
+    {
+        "identificacao": "Jatoba",
+        "familia": "Fabacéas",
+        "especie": "Hymenaea sp"
+    },
+    {
+        "identificacao": "Amoreira",
+        "familia": "Moraceae",
+        "especie": "Morus nigra"
+    },
+    {
+        "identificacao": "Seriguela",
+        "familia": "Anacardiaceae",
+        "especie": "Spondias Purpurea"
+    },
+    {
+        "identificacao": "Sombreiro",
+        "familia": "Fabacéas",
+        "especie": "Clitoria fairchildiana"
+    },
+    {
+        "identificacao": "Cajú",
+        "familia": "Anacardiaceae",
+        "especie": "Anacardia ocidentalle"
+    },
+    {
+        "identificacao": "Jacarandá",
+        "familia": "Bignoneaceae",
+        "especie": "Jacaranda mimosifolia"
+    }
+]
