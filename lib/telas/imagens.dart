@@ -1,13 +1,14 @@
 // ignore_for_file: unnecessary_getters_setters, avoid_print
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_image_slideshow/flutter_image_slideshow.dart';
 import 'package:treeco/constantes.dart';
 import '../modelo/arvore.dart';
 
-typedef OnArvoreParaGravar = void Function(Arvore arvore);
-typedef OnImagemParaVisualizar = void Function(String string);
+typedef OnIndiceImagemSelecionada = void Function(int indice);
+typedef OnImagemParaVisualizar = void Function(Uint8List bytesDaImagem);
 typedef OnAtivarCamera = void Function();
 typedef OnSelecionarImagem = void Function();
 
@@ -20,10 +21,11 @@ class Imagens {
     _arvore = value;
   }
 
-  late OnArvoreParaGravar _onArvoreParaGravar;
-  OnArvoreParaGravar get onArvoreParaGravar => _onArvoreParaGravar;
-  set onArvoreParaGravar(OnArvoreParaGravar value) {
-    _onArvoreParaGravar = value;
+  late OnIndiceImagemSelecionada _onIndiceImagemSelecionada;
+  OnIndiceImagemSelecionada get onIndiceImagemSelecionada =>
+      _onIndiceImagemSelecionada;
+  set onIndiceImagemSelecionada(OnIndiceImagemSelecionada value) {
+    _onIndiceImagemSelecionada = value;
   }
 
   late OnImagemParaVisualizar _onImagemParaVisualizar;
@@ -45,41 +47,35 @@ class Imagens {
   }
 
   Imagens(
-      OnArvoreParaGravar onArvoreParaGravar,
+      OnIndiceImagemSelecionada onIndiceImagemSelecionada,
       OnImagemParaVisualizar onImagemParaVisualizar,
       OnAtivarCamera onAtivarCamera,
       TemUsuarioLogado temUsuarioLogado) {
-    this.onArvoreParaGravar = onArvoreParaGravar;
+    this.onIndiceImagemSelecionada = onIndiceImagemSelecionada;
     this.onImagemParaVisualizar = onImagemParaVisualizar;
     this.onAtivarCamera = onAtivarCamera;
 
     this.temUsuarioLogado = temUsuarioLogado;
   }
 
-  void gravarImagem() {
-    onArvoreParaGravar(arvore);
-  }
-
   Widget getSlides() {
-    List<Image> imagens = [];
+    List<Widget> imagens = [];
 
     if (arvore.imagens.isEmpty) {
-      imagens.add(Image.asset("lib/recursos/imagens/marcador.png",
-          fit: BoxFit.fitHeight));
+      imagens.add(Image.asset("lib/recursos/imagens/marcador.png"));
     } else {
-      final bytes = base64.decode(arvore.imagens.first);
-
-      imagens.add(Image.memory(bytes, fit: BoxFit.fitHeight));
+      for (final image in arvore.imagens) {
+        final bytes = base64.decode(image);
+        imagens.add(GestureDetector(
+          child: Image.memory(bytes, fit: BoxFit.fitHeight),
+          onTap: () {
+            onImagemParaVisualizar(bytes);
+          },
+        ));
+      }
     }
 
     return Container(
-        // color: Colors.amber,
-        decoration: BoxDecoration(
-            // color: Colors.green[100],
-            border: Border.all(
-          color: Colors.green,
-          width: 4,
-        )),
         margin: const EdgeInsets.all(MARGEM_DEFAULT),
         child: ImageSlideshow(
           width: double.infinity,
@@ -87,58 +83,38 @@ class Imagens {
           initialPage: 0,
           indicatorColor: Colors.green,
           indicatorBackgroundColor: Colors.grey,
-          onPageChanged: (value) {
-            print('Page changed: $value');
-          },
           autoPlayInterval: 0,
           indicatorRadius: 4,
           isLoop: true,
           children: imagens,
+          onPageChanged: (indice) => {onIndiceImagemSelecionada(indice)},
         ));
   }
 
   Widget visualizar(Arvore arvore) {
     this.arvore = arvore;
 
-    final formKey = GlobalKey<FormState>();
-    return SingleChildScrollView(
-      scrollDirection: Axis.vertical,
-      child: Form(
-          key: formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              getSlides(),
-              Padding(
-                  padding: const EdgeInsets.only(top: 14, bottom: 6, right: 4),
-                  child:
-                      Row(mainAxisAlignment: MainAxisAlignment.end, children: [
-                    Text(
-                        "última fotografia capturada por ${arvore.quemFotografou.nome}",
-                        style: const TextStyle(
-                            fontSize: 12, color: Colors.black45))
-                  ])),
-              temUsuarioLogado()
-                  ? Padding(
-                      padding: const EdgeInsets.all(6),
-                      child: Container(
-                          width: double.infinity,
-                          color: Colors.transparent,
-                          child: ElevatedButton.icon(
-                            style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.green),
-                            onPressed: () {
-                              gravarImagem();
-                            },
-                            icon: const Icon(
-                              Icons.check,
-                              size: 24.0,
-                            ),
-                            label: const Text('gravar'),
-                          )))
-                  : const SizedBox.shrink()
-            ],
-          )),
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        Padding(
+            padding: const EdgeInsets.all(MARGEM_DEFAULT),
+            child: Text(arvore.identificacao,
+                style: const TextStyle(fontWeight: FontWeight.bold))),
+        const Padding(
+            padding: EdgeInsets.all(MARGEM_DEFAULT),
+            child: Divider(thickness: 2)),
+        getSlides(),
+        Padding(
+            padding: const EdgeInsets.all(MARGEM_DEFAULT),
+            child: Text(
+              "${arvore.imagens.length} foto(s) de $MAXIMO_DE_IMAGENS",
+              style: const TextStyle(fontSize: 11),
+            )),
+        const Padding(
+            padding: EdgeInsets.all(MARGEM_DEFAULT),
+            child: Divider(thickness: 2))
+      ],
     );
   }
 }

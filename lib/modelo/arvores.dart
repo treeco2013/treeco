@@ -7,7 +7,7 @@ import '../api/api.dart';
 import 'arvore.dart';
 import '../constantes.dart';
 
-typedef OnArvoreSelecionada = void Function(Arvore arvore, bool duploClique);
+typedef OnArvoreSelecionada = void Function(Arvore arvore);
 
 class Arvores {
   late OnArvoreSelecionada _onArvoreSelecionada;
@@ -51,30 +51,43 @@ class Arvores {
     return await api.remover(id);
   }
 
+  String getImagemMarcador(Arvore arvore, bool destacar) {
+    String imagem = "";
+
+    if (arvore.comProblema) {
+      imagem = "lib/recursos/imagens/marcador_problema.png";
+      if (destacar) {
+        imagem = "lib/recursos/imagens/marcador_problema_destacado.png";
+      }
+    } else {
+      imagem = "lib/recursos/imagens/marcador.png";
+      if (destacar) {
+        imagem = "lib/recursos/imagens/marcador_destacado.png";
+      }
+    }
+
+    return imagem;
+  }
+
   Widget getMarcadorArvore(Arvore arvore, bool destacar) {
     return GestureDetector(
-      child: Stack(children: [
-        Image.asset(destacar
-            ? "lib/recursos/imagens/marcador_destacado.png"
-            : "lib/recursos/imagens/marcador.png"),
-        !destacar
-            ? Center(
-                child: Text(
-                arvore.identificacao,
-                style: const TextStyle(
-                    fontSize: 11,
-                    color: Colors.white,
-                    backgroundColor: Colors.blueGrey),
-              ))
-            : const SizedBox.shrink()
-      ]),
-      onTap: () {
-        onArvoreSelecionada(arvore, false);
-      },
-      onDoubleTap: () {
-        onArvoreSelecionada(arvore, true);
-      },
-    );
+        child: Stack(children: [
+          Image.asset(getImagemMarcador(arvore, destacar),
+              width: TAMANHO_MARCADOR, height: TAMANHO_MARCADOR),
+          !destacar
+              ? Center(
+                  child: Text(
+                  arvore.identificacao,
+                  style: const TextStyle(
+                      fontSize: TAMANHO_FONTE_MARCADOR,
+                      color: Colors.white,
+                      backgroundColor: Colors.blueGrey),
+                ))
+              : const SizedBox.shrink()
+        ]),
+        onTap: () {
+          onArvoreSelecionada(arvore);
+        });
   }
 
   Future<List<Marker>> toMarcadores({String idArvoreParaDestacar = ""}) async {

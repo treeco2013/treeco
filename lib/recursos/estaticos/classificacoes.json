@@ -105,8 +105,43 @@
         "especie": "Anacardia ocidentalle"
     },
     {
-        "identificacao": "Jacarandá",
-        "familia": "Bignoneaceae",
-        "especie": "Jacaranda mimosifolia"
+        "identificacao": "Pitanga",
+        "familia": "Mirtaceae",
+        "especie": "Eugenia euniflora"
+    },
+    {
+        "identificacao": "Caferana",
+        "familia": "Malpighiaceae",
+        "especie": "Bunchosia armeniaca"
+    },
+    {
+        "identificacao": "Limão",
+        "familia": "Rutaceae",
+        "especie": "Citrus limonum"
+    },
+    {
+        "identificacao": "Figueira",
+        "familia": "Moraceae",
+        "especie": "Ficus benjamina"
+    },
+    {
+        "identificacao": "Banana",
+        "familia": "Musaceae",
+        "especie": "Musa acuminata"
+    },
+    {
+        "identificacao": "Jamelão",
+        "familia": "Myrtaceae",
+        "especie": "Syzygium cumini"
+    },
+    {
+        "identificacao": "Pata de vaca",
+        "familia": "Fabaceae",
+        "especie": "Bauhinia forficata"
+    },
+    {
+        "identificacao": "Castanha do maranhão",
+        "familia": "Malvaceae",
+        "especie": "Pachira glabra"
     }
 ]

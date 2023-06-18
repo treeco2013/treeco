@@ -1,9 +1,10 @@
 // ignore_for_file: unnecessary_getters_setters, avoid_print
 import 'package:flutter/material.dart';
 import 'package:treeco/api/api.dart';
+import '../constantes.dart';
 import '../modelo/arvore.dart';
 
-typedef OnArvoreParaGravar = void Function(Arvore arvore);
+typedef OnGravarArvore = void Function({bool exibirMapa});
 typedef OnClassificacaoSelecionada = void Function(Arvore arvore);
 
 typedef TemUsuarioLogado = bool Function();
@@ -15,10 +16,10 @@ class Detalhes {
     _arvore = value;
   }
 
-  late OnArvoreParaGravar _onArvoreParaGravar;
-  OnArvoreParaGravar get onArvoreParaGravar => _onArvoreParaGravar;
-  set onArvoreParaGravar(OnArvoreParaGravar value) {
-    _onArvoreParaGravar = value;
+  late OnGravarArvore _onGravarArvore;
+  OnGravarArvore get onGravarArvore => _onGravarArvore;
+  set onGravarArvore(OnGravarArvore value) {
+    _onGravarArvore = value;
   }
 
   late OnClassificacaoSelecionada _onClassificacaoSelecionada;
@@ -41,20 +42,16 @@ class Detalhes {
   }
 
   Detalhes(
-      OnArvoreParaGravar onArvoreParaGravar,
+      OnGravarArvore onGravarArvore,
       OnClassificacaoSelecionada onClassificacaoSelecionada,
       TemUsuarioLogado temUsuarioLogado,
       Classificacoes classificacoes) {
     this.onClassificacaoSelecionada = onClassificacaoSelecionada;
-    this.onArvoreParaGravar = onArvoreParaGravar;
+    this.onGravarArvore = onGravarArvore;
 
     this.temUsuarioLogado = temUsuarioLogado;
 
     this.classificacoes = classificacoes;
-  }
-
-  void gravarArvore() {
-    onArvoreParaGravar(arvore);
   }
 
   Widget visualizar(Arvore arvore) {
@@ -69,7 +66,7 @@ class Detalhes {
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[
               Padding(
-                  padding: const EdgeInsets.all(4),
+                  padding: const EdgeInsets.all(MARGEM_DEFAULT),
                   child: Autocomplete<Arvore>(
                       initialValue:
                           TextEditingValue(text: arvore.identificacao),
@@ -107,7 +104,7 @@ class Detalhes {
                         );
                       })),
               Padding(
-                padding: const EdgeInsets.all(4),
+                padding: const EdgeInsets.all(MARGEM_DEFAULT),
                 child: TextFormField(
                     initialValue: arvore.familia,
                     enabled: temUsuarioLogado(),
@@ -115,7 +112,7 @@ class Detalhes {
                     onChanged: (value) => arvore.familia = value),
               ),
               Padding(
-                padding: const EdgeInsets.all(4),
+                padding: const EdgeInsets.all(MARGEM_DEFAULT),
                 child: TextFormField(
                     initialValue: arvore.especie,
                     enabled: temUsuarioLogado(),
@@ -123,7 +120,7 @@ class Detalhes {
                     onChanged: (value) => arvore.especie = value),
               ),
               Padding(
-                padding: const EdgeInsets.all(4),
+                padding: const EdgeInsets.all(MARGEM_DEFAULT),
                 child: TextFormField(
                     initialValue: arvore.detalhes,
                     enabled: temUsuarioLogado(),
@@ -133,18 +130,19 @@ class Detalhes {
                         const InputDecoration(hintText: 'mais detalhes'),
                     onChanged: (value) => arvore.detalhes = value),
               ),
-              Padding(
-                  padding: const EdgeInsets.only(top: 14, bottom: 6, right: 4),
-                  child:
-                      Row(mainAxisAlignment: MainAxisAlignment.end, children: [
-                    Text(
-                        "últimas alterações realizadas por ${arvore.quemMarcou.nome}",
-                        style: const TextStyle(
-                            fontSize: 12, color: Colors.black45))
-                  ])),
+              arvore.identificacao.isNotEmpty
+                  ? Padding(
+                      padding: const EdgeInsets.all(MARGEM_DEFAULT),
+                      child: Align(
+                          alignment: Alignment.topLeft,
+                          child: Text(
+                              "últimas alterações realizadas por ${arvore.quemMarcou.nome}",
+                              style: const TextStyle(
+                                  fontSize: 12, color: Colors.black45))))
+                  : const SizedBox.shrink(),
               temUsuarioLogado()
                   ? Padding(
-                      padding: const EdgeInsets.all(6),
+                      padding: const EdgeInsets.all(MARGEM_DEFAULT),
                       child: Container(
                           width: double.infinity,
                           color: Colors.transparent,
@@ -152,7 +150,7 @@ class Detalhes {
                             style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.green),
                             onPressed: () {
-                              gravarArvore();
+                              onGravarArvore(exibirMapa: false);
                             },
                             icon: const Icon(
                               Icons.check,

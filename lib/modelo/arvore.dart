@@ -41,6 +41,12 @@ class Arvore {
     _posicao = value;
   }
 
+  bool _comProblema = false;
+  bool get comProblema => _comProblema;
+  set comProblema(bool value) {
+    _comProblema = value;
+  }
+
   List<String> _imagens = [];
   List<String> get imagens => _imagens;
   set imagens(List<String> value) {
@@ -51,12 +57,6 @@ class Arvore {
   Usuario get quemMarcou => _quemMarcou;
   set quemMarcou(Usuario value) {
     _quemMarcou = value;
-  }
-
-  late Usuario _quemFotografou;
-  Usuario get quemFotografou => _quemFotografou;
-  set quemFotografou(Usuario value) {
-    _quemFotografou = value;
   }
 
   Arvore(
@@ -77,8 +77,8 @@ class Arvore {
         especie: registro['especie'],
         detalhes: registro['detalhes']);
     arvore.id = registro['id'];
+    arvore.comProblema = registro['comProblema'];
     arvore.quemMarcou = Usuario.fromJson(registro['quemMarcou']);
-    arvore.quemFotografou = Usuario.fromJson(registro['quemFotografou']);
     arvore.posicao = Position.fromMap(registro['posicao']);
 
     for (final imagem in registro['imagens']) {
@@ -104,9 +104,9 @@ class Arvore {
       'familia': familia,
       'especie': especie,
       'detalhes': detalhes,
+      'comProblema': comProblema,
       'imagens': imagens,
       'quemMarcou': quemMarcou.toJson(),
-      'quemFotografou': quemFotografou.toJson(),
       'posicao': posicao.toJson()
     };
   }
