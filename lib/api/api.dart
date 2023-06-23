@@ -139,22 +139,8 @@ class Local extends API {
     return resultado;
   }
 
-  List<Map<String, dynamic>> serializar(List<Arvore> arvores) {
-    List<Map<String, dynamic>> serializadas = [];
-    for (final arvore in arvores) {
-      serializadas.add(arvore.toJson());
-    }
-
-    return serializadas;
-  }
-
-  List<Arvore> deserializar(List<Map<String, dynamic>> jsons) {
-    List<Arvore> deserializadas = [];
-    for (final json in jsons) {
-      deserializadas.add(Arvore.fromBancoDeDados(json));
-    }
-
-    return deserializadas;
+  String getDatabasePath() {
+    return _banco.path;
   }
 
   @override

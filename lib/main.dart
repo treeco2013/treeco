@@ -1,11 +1,16 @@
 // ignore_for_file: unnecessary_getters_setters, avoid_print
 import 'dart:convert';
+import 'dart:io';
 
+import 'package:archive/archive_io.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:treeco/api/api.dart';
 import 'package:treeco/modelo/arvores.dart';
 import 'package:treeco/camera.dart';
@@ -133,7 +138,9 @@ class TreeCoState extends State<TreeCo> {
   }
 
   int _indiceImagemSelecionada = 0;
+  bool _compartilhando = false;
   bool _posicionando = false;
+
   bool _apiLocal = false;
 
   @override
@@ -144,7 +151,7 @@ class TreeCoState extends State<TreeCo> {
       estado = Estado.iniciando;
     });
 
-    travarComoRetrato();
+    exibirComoRetrato();
 
     final api = getAPI();
     api.iniciar().then((resultado) {
@@ -222,7 +229,7 @@ class TreeCoState extends State<TreeCo> {
     return classificoes;
   }
 
-  void travarComoRetrato() {
+  void exibirComoRetrato() {
     SystemChrome.setPreferredOrientations([
       DeviceOrientation.portraitUp,
       DeviceOrientation.portraitDown,
@@ -490,6 +497,38 @@ class TreeCoState extends State<TreeCo> {
     gravarArvore();
   }
 
+  void compartilhar() {
+    arvores.exportarArvores().then((json) {
+      if (json.isNotEmpty) {
+        SchedulerBinding.instance.addPostFrameCallback((_) {
+          setState(() {
+            _compartilhando = true;
+          });
+
+          getTemporaryDirectory().then((dirTemporario) {
+            final microsegs = DateTime.now().microsecondsSinceEpoch;
+
+            final arquivo =
+                File("${dirTemporario.path}/treeco.$microsegs.json");
+            arquivo.writeAsStringSync(json);
+
+            String zipado = "${dirTemporario.path}/treeco.$microsegs.zip";
+            final zip = ZipFileEncoder();
+            zip.create(zipado);
+            zip.addFile(arquivo);
+            zip.close();
+
+            Share.shareXFiles([XFile(zipado)]).then((_) => setState(() {
+                  _compartilhando = false;
+                }));
+          });
+        });
+      } else {
+        alertar("não há árvores para serem compartilhadas");
+      }
+    });
+  }
+
   Widget getBotoesMapa() {
     final botoes = Column(children: [
       Container(
@@ -509,6 +548,16 @@ class TreeCoState extends State<TreeCo> {
                     marcarUmaArvore();
                   },
                   child: const Icon(Icons.add_location_alt_sharp)))
+          : const SizedBox.shrink(),
+      temUsuarioLogado() && _apiLocal
+          ? Container(
+              margin: const EdgeInsets.all(MARGEM_DEFAULT),
+              child: FloatingActionButton(
+                  enableFeedback: true,
+                  onPressed: () {
+                    compartilhar();
+                  },
+                  child: const Icon(Icons.share)))
           : const SizedBox.shrink()
     ]);
 
@@ -708,7 +757,7 @@ class TreeCoState extends State<TreeCo> {
     } else if (_opcaoSelecionada == MAPA) {
       tela = Stack(children: [
         Center(child: _mapa.visualizar(!_posicionando)),
-        _posicionando
+        _posicionando || _compartilhando
             ? Container(
                 constraints: const BoxConstraints.expand(),
                 child: const Column(
@@ -811,23 +860,22 @@ class TreeCoState extends State<TreeCo> {
     } else {
       tela = Scaffold(
           appBar: AppBar(
-              title: Row(children: [
-            const Text("TREECO marque "),
-            const Icon(Icons.add_location_alt_sharp),
-            const Text(" uma árvore"),
-            const Spacer(),
-            GestureDetector(
-                onTap: () {
-                  if (temUsuarioLogado()) {
-                    logout();
-                  } else {
-                    login();
-                  }
-                },
-                child: temUsuarioLogado()
-                    ? const Icon(Icons.logout)
-                    : const Icon(Icons.login))
-          ])),
+              title: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                const Text(" TREECO"),
+                GestureDetector(
+                    onTap: () {
+                      if (temUsuarioLogado()) {
+                        logout();
+                      } else {
+                        login();
+                      }
+                    },
+                    child: temUsuarioLogado()
+                        ? const Icon(Icons.logout)
+                        : const Icon(Icons.login))
+              ])),
           body: getTelaDaOpcaoSelecionada(),
           bottomNavigationBar: camera.estadoCamera == EstadoCamera.ativada
               ? const SizedBox.shrink()

@@ -1,4 +1,6 @@
 // ignore_for_file: unnecessary_getters_setters, depend_on_referenced_packages, avoid_print
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
@@ -67,6 +69,23 @@ class Arvores {
     }
 
     return imagem;
+  }
+
+  Future<String> exportarArvores() async {
+    String json = "";
+
+    final arvores = await _api.getArvores();
+    if (arvores.isNotEmpty) {
+      json = '{"arvores": [';
+
+      for (final arvore in arvores) {
+        json += jsonEncode(arvore.toJson());
+      }
+
+      json += "$json]}";
+    }
+
+    return json;
   }
 
   Widget getMarcadorArvore(Arvore arvore, bool destacar) {
