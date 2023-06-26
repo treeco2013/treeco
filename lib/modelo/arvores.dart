@@ -82,7 +82,7 @@ class Arvores {
         json += jsonEncode(arvore.toJson());
       }
 
-      json += "$json]}";
+      json += "$json,]}";
     }
 
     return json;
