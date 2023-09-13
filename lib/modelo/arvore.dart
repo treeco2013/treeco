@@ -1,13 +1,13 @@
 // ignore_for_file: unnecessary_getters_setters
 import 'package:geolocator/geolocator.dart';
-import 'package:uuid/uuid.dart';
 
+import 'imagem.dart';
 import 'usuario.dart';
 
 class Arvore {
-  String _id = "";
-  String get id => _id;
-  set id(String value) {
+  int _id = 0;
+  int get id => _id;
+  set id(int value) {
     _id = value;
   }
 
@@ -47,15 +47,15 @@ class Arvore {
     _comProblema = value;
   }
 
-  List<String> _imagens = [];
-  List<String> get imagens => _imagens;
-  set imagens(List<String> value) {
+  List<Imagem> _imagens = [];
+  List<Imagem> get imagens => _imagens;
+  set imagens(List<Imagem> value) {
     _imagens = value;
   }
 
-  late Usuario _quemMarcou;
-  Usuario get quemMarcou => _quemMarcou;
-  set quemMarcou(Usuario value) {
+  late Usuario? _quemMarcou;
+  Usuario? get quemMarcou => _quemMarcou;
+  set quemMarcou(Usuario? value) {
     _quemMarcou = value;
   }
 
@@ -70,7 +70,7 @@ class Arvore {
     this.detalhes = detalhes;
   }
 
-  static Arvore fromBancoDeDados(Map<String, dynamic> registro) {
+  static Arvore fromJson(Map<String, dynamic> registro) {
     Arvore arvore = Arvore(
         identificacao: registro['identificacao'],
         familia: registro['familia'],
@@ -79,10 +79,20 @@ class Arvore {
     arvore.id = registro['id'];
     arvore.comProblema = registro['comProblema'];
     arvore.quemMarcou = Usuario.fromJson(registro['quemMarcou']);
-    arvore.posicao = Position.fromMap(registro['posicao']);
+
+    Position posicao = Position(
+        latitude: registro['latitude'].toDouble(),
+        longitude: registro['longitude'].toDouble(),
+        accuracy: 0.0,
+        altitude: 0.0,
+        heading: 0.0,
+        speed: 0.0,
+        speedAccuracy: 0.0,
+        timestamp: null);
+    arvore.posicao = posicao;
 
     for (final imagem in registro['imagens']) {
-      arvore.imagens.add(imagem as String);
+      arvore.imagens.add(Imagem.fromJson(imagem));
     }
 
     return arvore;
@@ -106,17 +116,25 @@ class Arvore {
       'detalhes': detalhes,
       'comProblema': comProblema,
       'imagens': imagens,
-      'quemMarcou': quemMarcou.toJson(),
+      'quemMarcou': quemMarcou != null ? quemMarcou!.toJson() : "{}",
       'posicao': posicao.toJson()
     };
   }
 
-  Arvore generateId() {
-    final mili = DateTime.now().millisecondsSinceEpoch;
-    id = const Uuid().v5(
-        Uuid.NAMESPACE_OID, "$identificacao|$familia|$especie|$detalhes|$mili");
+  static List<String> validarArvore(Arvore arvore) {
+    List<String> erros = [];
 
-    return this;
+    if (arvore.identificacao.isEmpty) {
+      erros.add("informe a identificação da árvore");
+    }
+    if (arvore.familia.isEmpty) {
+      erros.add("informe a família da árvore");
+    }
+    if (arvore.especie.isEmpty) {
+      erros.add("informe a espécie da árvore");
+    }
+
+    return erros;
   }
 
   @override

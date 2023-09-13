@@ -1,14 +1,11 @@
 // ignore_for_file: unnecessary_getters_setters, avoid_print
-import 'dart:convert';
-import 'dart:typed_data';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_image_slideshow/flutter_image_slideshow.dart';
 import 'package:treeco/constantes.dart';
 import '../modelo/arvore.dart';
 
 typedef OnIndiceImagemSelecionada = void Function(int indice);
-typedef OnImagemParaVisualizar = void Function(Uint8List bytesDaImagem);
+typedef OnImagemParaVisualizar = void Function(String url);
 typedef OnAtivarCamera = void Function();
 typedef OnSelecionarImagem = void Function();
 
@@ -34,42 +31,31 @@ class Imagens {
     _onImagemParaVisualizar = value;
   }
 
-  late OnAtivarCamera _onAtivarCamera;
-  OnAtivarCamera get onAtivarCamera => _onAtivarCamera;
-  set onAtivarCamera(OnAtivarCamera value) {
-    _onAtivarCamera = value;
+  late String _hostDeImagens;
+  String get hostDeImagens => _hostDeImagens;
+  set hostDeImagens(String value) {
+    _hostDeImagens = value;
   }
 
-  late TemUsuarioLogado _temUsuarioLogado;
-  TemUsuarioLogado get temUsuarioLogado => _temUsuarioLogado;
-  set temUsuarioLogado(TemUsuarioLogado value) {
-    _temUsuarioLogado = value;
-  }
-
-  Imagens(
-      OnIndiceImagemSelecionada onIndiceImagemSelecionada,
-      OnImagemParaVisualizar onImagemParaVisualizar,
-      OnAtivarCamera onAtivarCamera,
-      TemUsuarioLogado temUsuarioLogado) {
+  Imagens(OnIndiceImagemSelecionada onIndiceImagemSelecionada,
+      OnImagemParaVisualizar onImagemParaVisualizar, String hostDeImagens) {
     this.onIndiceImagemSelecionada = onIndiceImagemSelecionada;
     this.onImagemParaVisualizar = onImagemParaVisualizar;
-    this.onAtivarCamera = onAtivarCamera;
-
-    this.temUsuarioLogado = temUsuarioLogado;
+    this.hostDeImagens = hostDeImagens;
   }
 
-  Widget getSlides() {
+  Widget _getSlides(int indiceImagemSelecionada) {
     List<Widget> imagens = [];
 
     if (arvore.imagens.isEmpty) {
       imagens.add(Image.asset("lib/recursos/imagens/marcador.png"));
     } else {
-      for (final image in arvore.imagens) {
-        final bytes = base64.decode(image);
+      for (final imagem in arvore.imagens) {
+        String url = '$hostDeImagens${imagem.arquivo}';
         imagens.add(GestureDetector(
-          child: Image.memory(bytes, fit: BoxFit.fitHeight),
+          child: Image.network(url, fit: BoxFit.fitHeight),
           onTap: () {
-            onImagemParaVisualizar(bytes);
+            onImagemParaVisualizar(url);
           },
         ));
       }
@@ -80,7 +66,7 @@ class Imagens {
         child: ImageSlideshow(
           width: double.infinity,
           height: ALTURA_SLIDE,
-          initialPage: 0,
+          initialPage: indiceImagemSelecionada,
           indicatorColor: Colors.green,
           indicatorBackgroundColor: Colors.grey,
           autoPlayInterval: 0,
@@ -91,7 +77,7 @@ class Imagens {
         ));
   }
 
-  Widget visualizar(Arvore arvore) {
+  Widget visualizar(Arvore arvore, {int indiceImagemSelecionada = 0}) {
     this.arvore = arvore;
 
     return Column(
@@ -104,7 +90,7 @@ class Imagens {
         const Padding(
             padding: EdgeInsets.all(MARGEM_DEFAULT),
             child: Divider(thickness: 2)),
-        getSlides(),
+        _getSlides(indiceImagemSelecionada),
         Padding(
             padding: const EdgeInsets.all(MARGEM_DEFAULT),
             child: Text(

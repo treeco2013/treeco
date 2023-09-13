@@ -51,11 +51,11 @@ class Mapa {
     _controlador = MapController();
   }
 
-  Widget getMarcadorPosicao() {
+  Widget _getMarcadorPosicao() {
     return const Icon(Icons.person_pin, color: Colors.amber, size: 38);
   }
 
-  Future<EstadoPosicionamento> posicionamentoHabilitado() async {
+  Future<EstadoPosicionamento> _posicionamentoHabilitado() async {
     EstadoPosicionamento estado = EstadoPosicionamento.indeterminado;
 
     bool localizacaoHabilitada = await Geolocator.isLocationServiceEnabled();
@@ -80,7 +80,7 @@ class Mapa {
   }
 
   Future<EstadoPosicionamento> atualizarPosicao() async {
-    EstadoPosicionamento estado = await posicionamentoHabilitado();
+    EstadoPosicionamento estado = await _posicionamentoHabilitado();
 
     if (estado == EstadoPosicionamento.permitido) {
       posicao = await Geolocator.getCurrentPosition(
@@ -95,7 +95,7 @@ class Mapa {
     controlador.move(LatLng(_posicao!.latitude, _posicao!.longitude), _zoom);
   }
 
-  List<Marker> getMarcadores() {
+  List<Marker> _getMarcadores() {
     final List<Marker> marcadores = [];
 
     if (_posicao != null) {
@@ -103,7 +103,7 @@ class Mapa {
           point: LatLng(_posicao!.latitude, _posicao!.longitude),
           width: _tamanhoMarcador,
           height: _tamanhoMarcador,
-          builder: (context) => getMarcadorPosicao()));
+          builder: (context) => _getMarcadorPosicao()));
     }
     if (_marcadores != null) {
       marcadores.addAll(_marcadores!);
@@ -130,7 +130,7 @@ class Mapa {
                 maxZoom: 20,
                 maxNativeZoom: 20),
             mostrarMarcadores
-                ? MarkerLayer(markers: getMarcadores())
+                ? MarkerLayer(markers: _getMarcadores())
                 : const SizedBox.shrink()
           ]);
     }

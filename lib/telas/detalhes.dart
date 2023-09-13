@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:treeco/api/api.dart';
 import '../constantes.dart';
 import '../modelo/arvore.dart';
+import '../recursos/login.dart';
 
 typedef OnGravarArvore = void Function({bool exibirMapa});
 typedef OnClassificacaoSelecionada = void Function(Arvore arvore);
@@ -29,12 +30,6 @@ class Detalhes {
     _onClassificacaoSelecionada = value;
   }
 
-  late TemUsuarioLogado _temUsuarioLogado;
-  TemUsuarioLogado get temUsuarioLogado => _temUsuarioLogado;
-  set temUsuarioLogado(TemUsuarioLogado value) {
-    _temUsuarioLogado = value;
-  }
-
   late Classificacoes _classificacoes;
   Classificacoes get classificacoes => _classificacoes;
   set classificacoes(Classificacoes value) {
@@ -44,12 +39,9 @@ class Detalhes {
   Detalhes(
       OnGravarArvore onGravarArvore,
       OnClassificacaoSelecionada onClassificacaoSelecionada,
-      TemUsuarioLogado temUsuarioLogado,
       Classificacoes classificacoes) {
     this.onClassificacaoSelecionada = onClassificacaoSelecionada;
     this.onGravarArvore = onGravarArvore;
-
-    this.temUsuarioLogado = temUsuarioLogado;
 
     this.classificacoes = classificacoes;
   }
@@ -136,7 +128,7 @@ class Detalhes {
                       child: Align(
                           alignment: Alignment.topLeft,
                           child: Text(
-                              "últimas alterações realizadas por ${arvore.quemMarcou.nome}",
+                              "últimas alterações realizadas por ${arvore.quemMarcou!.nome}",
                               style: const TextStyle(
                                   fontSize: 12, color: Colors.black45))))
                   : const SizedBox.shrink(),
