@@ -36,9 +36,8 @@ abstract class API {
 }
 
 const CLASSIFICACOES = "lib/recursos/estaticos/classificacoes.json";
-const CHAVE_DE_ENCRIPTACAO = "ECRAp5ja6DKADoukZm8SapZoLSd5KN9S";
-final IV_DE_ENCRIPTACAO =
-    "a|b|c|d|e|f|g|h|i|j|k|l|m|n|o|p|q|r|s|t|u|v|x|y|w|z".substring(0, 16);
+final CHAVE_DE_ENCRIPTACAO = dotenv.env['ENCRIPTACAO_CHAVE']!;
+final IV_DE_ENCRIPTACAO = dotenv.env['ENCRIPTACAO_IV']!.substring(0, 16);
 const SUCESSO_ENVIO = 201;
 
 class Classificacoes extends API {
