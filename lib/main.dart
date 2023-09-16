@@ -385,6 +385,7 @@ class TreeCoState extends State<TreeCo> {
 
     api.removerImagem(imagem.id).then((resultado) {
       if (resultado == ResultadoOperacao.sucesso) {
+        _indiceImagemSelecionada -= _indiceImagemSelecionada > 0 ? 1 : 0;
         Fluttertoast.showToast(msg: "imagem removida com sucesso");
       } else {
         Fluttertoast.showToast(msg: "não foi possível remover a imagem");
