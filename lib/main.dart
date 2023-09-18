@@ -428,6 +428,16 @@ class TreeCoState extends State<TreeCo> {
                   },
                   child: const Icon(Icons.add_location_alt_sharp)))
           : const SizedBox.shrink(),
+      Container(
+          margin: const EdgeInsets.all(MARGEM_DEFAULT),
+          child: FloatingActionButton(
+              enableFeedback: true,
+              onPressed: () {
+                Fluttertoast.showToast(msg: 'mapa sendo atualizado');
+
+                _atualizarArvoresMarcadas();
+              },
+              child: const Icon(Icons.refresh)))
     ]);
 
     return botoes;
