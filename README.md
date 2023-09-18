@@ -16,3 +16,9 @@ Primeira versão desenvolvida/codificada por Luis Paulo da Silva Carvalho (luisp
 
 Linkedin: https://www.linkedin.com/in/luis-paulo-493717220/
 Lattes: http://lattes.cnpq.br/0311325080761195
+
+## Back-end
+
+Código-fonte do back-end disponível no link abaixo:
+
+https://github.com/treeco2013/infra/tree/master
