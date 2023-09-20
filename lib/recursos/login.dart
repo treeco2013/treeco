@@ -25,6 +25,8 @@ void login(OnLogin onLogin, OnLoginErro onLoginErro) {
 
 void logout(OnLogout onLogout) {
   loginGoogle.disconnect().then((_) {
+    usuario = null;
+
     onLogout();
   });
 }

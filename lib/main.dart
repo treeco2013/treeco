@@ -738,12 +738,19 @@ class TreeCoState extends State<TreeCo> {
                 GestureDetector(
                     onTap: () {
                       if (temUsuarioLogado()) {
-                        logout(() => Fluttertoast.showToast(
-                            msg: "você foi desconectado com sucesso!"));
+                        logout(() {
+                          Fluttertoast.showToast(
+                              msg: "você foi desconectado com sucesso!");
+
+                          setState(() {});
+                        });
                       } else {
-                        login(
-                            (usuario) => Fluttertoast.showToast(
-                                msg: "seja bem-vindo, ${usuario.nome}"),
+                        login((usuario) {
+                          Fluttertoast.showToast(
+                              msg: "seja bem-vindo, ${usuario.nome}");
+
+                          setState(() {});
+                        },
                             (erro) => Fluttertoast.showToast(
                                 msg: "ocorreu um erro durante o login"));
                       }
